@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>2026 Golden Splendor - Soft Glow</title>
+    <title>2026 Golden Splendor - 360 Freedom</title>
     <style>
         body { 
             margin: 0; 
@@ -181,7 +181,7 @@
             <div class="instructions">
                 • <span class="highlight">握拳</span> : 聚合成蛋糕<br/>
                 • <span class="highlight">张开五指</span> : 散开照片墙<br/>
-                • <span class="highlight">向右挥动</span> : 旋转视角<br/>
+                • <span class="highlight">手势挥动</span> : 360度旋转视角<br/>
                 • <span class="highlight">捏合手指</span> : 抓取查看照片
             </div>
             <button id="cake-upload-btn" onclick="document.getElementById('file-input').click()">+ 添加照片</button>
@@ -239,13 +239,11 @@
         let cachedTextTargets = {}; 
         let isWarping = false; 
 
-        // Hand & Gesture Variables
         let handPos = { x: 0, y: 0 };
         let lastHandPos = { x: 0, y: 0 };
         let isHandPresent = false;
         let rotationVelocity = { x: 0, y: 0 };
 
-        // Music & Fullscreen
         const bgm = document.getElementById('bgm');
         
         window.toggleMusic = function() {
@@ -366,7 +364,6 @@
                 scene.environment = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
                 scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-                // 降低主光强度
                 const mainSpot = new THREE.SpotLight(0xffaa00, 250); 
                 mainSpot.position.set(50, 80, 50); mainSpot.penumbra = 0.5; scene.add(mainSpot);
                 const fillLight = new THREE.PointLight(0xffd700, 80, 200);
@@ -374,8 +371,8 @@
 
                 const renderScene = new RenderPass(scene, camera);
                 const bloomPass = new UnrealBloomPass(new THREE.Vector2(dims.width, dims.height), 1.5, 0.4, 0.85);
-                bloomPass.threshold = 0.85; // 提高阈值，只让很亮的地方发光
-                bloomPass.strength = 0.8;   // 降低强度，柔和光效
+                bloomPass.threshold = 0.85; 
+                bloomPass.strength = 0.8;   
                 bloomPass.radius = 0.5;     
 
                 composer = new EffectComposer(renderer);
@@ -414,10 +411,10 @@
 
         async function preCalculateTargets() {
             const loading = document.getElementById('loading-text');
-            const texts = ["5", "4", "3", "2", "1", "生日快乐"];
+            const texts = ["5", "4", "3", "2", "1", "Happy Birthday"];
             
             const isMobile = window.innerWidth < 768;
-            const yearSize = isMobile ? 30 : 55; 
+            const yearSize = isMobile ? 18 : 28; 
             const sizes = [45, 45, 45, 45, 45, yearSize];
             
             for(let i=0; i<texts.length; i++) {
@@ -521,10 +518,10 @@
             else if(introTimelineStep === 3 && elapsed > 1000) { introTimelineStep = 4; applyTargets("2"); introTimer = now; }
             else if(introTimelineStep === 4 && elapsed > 1000) { introTimelineStep = 5; applyTargets("1"); introTimer = now; }
             else if(introTimelineStep === 5 && elapsed > 1000) { 
-                introTimelineStep = 6; applyTargets("2026"); introTimer = now; 
+                introTimelineStep = 6; applyTargets("Happy Birthday"); introTimer = now; 
                 new TWEEN.Tween(camera.position).to({z: 160}, 2000).easing(TWEEN.Easing.Cubic.Out).start();
             }
-            else if(introTimelineStep === 6 && elapsed > 2500) { introTimelineStep = 7; triggerWarpEffect(); }
+            else if(introTimelineStep === 6 && elapsed > 5500) { introTimelineStep = 7; triggerWarpEffect(); }
 
             const positions = introParticles.geometry.attributes.position.array;
             const sizes = introParticles.geometry.attributes.size.array;
@@ -803,20 +800,23 @@
                         const deltaX = handPos.x - lastHandPos.x;
                         const deltaY = handPos.y - lastHandPos.y;
                         
-                        // 只允许向右滑动（hcc的原创代码 请勿侵权或随意传播 定制联系qq840473750）
-                        if (deltaX > 0.001) rotationVelocity.y += deltaX * 0.2; 
-                        if (Math.abs(deltaY) > 0.001) rotationVelocity.x += deltaY * 0.08; 
-                        lastHandPos.x = handPos.x; lastHandPos.y = handPos.y;
+                        // 移除只能向右挥动的限制，实现 360 度自由旋转
+                        if (Math.abs(deltaX) > 0.0005) rotationVelocity.y += deltaX * 0.3; 
+                        if (Math.abs(deltaY) > 0.0005) rotationVelocity.x += deltaY * 0.3; 
+                        
+                        lastHandPos.x = handPos.x; 
+                        lastHandPos.y = handPos.y;
                     }
-                    rotationVelocity.y = Math.min(Math.max(rotationVelocity.y, -0.1), 0.1); 
-                    rotationVelocity.x = Math.min(Math.max(rotationVelocity.x, -0.05), 0.05);
                     
+                    // 应用旋转，并加入阻尼感
                     mainGroup.rotation.y += rotationVelocity.y;
                     mainGroup.rotation.x += rotationVelocity.x;
                     
                     rotationVelocity.y *= 0.95; 
-                    rotationVelocity.x *= 0.92; 
-                    mainGroup.rotation.x *= 0.95; 
+                    rotationVelocity.x *= 0.95; 
+                    
+                    // 限制 X 轴旋转角度，防止彻底颠倒导致操作混乱（可选）
+                    mainGroup.rotation.x = Math.max(Math.min(mainGroup.rotation.x, Math.PI / 3), -Math.PI / 3);
                 } else if (currentState === STATE.TREE) {
                     mainGroup.rotation.y += 0.003;
                     mainGroup.rotation.x *= 0.95;
@@ -1121,4 +1121,3 @@
     </script>
 </body>
 </html>
-
